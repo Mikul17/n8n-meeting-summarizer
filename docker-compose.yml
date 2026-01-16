@@ -1,0 +1,65 @@
+volumes:
+  db_storage:
+  n8n_storage:
+
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app:/app/app
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - JIRA_API_TOKEN=${JIRA_API_TOKEN}
+      - JIRA_SERVICE_URL=${JIRA_SERVICE_URL}
+      - JIRA_PROJECT_KEY=${JIRA_PROJECT_KEY}
+
+  browser:
+    ports:
+      - "5910:5910"
+      - "9222:9222"
+
+  n8n:
+    image: n8nio/n8n:latest
+    restart: always
+    ports:
+      - "5678:5678"
+    links:
+      - postgres
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - DB_TYPE=${DB_TYPE}
+      - DB_POSTGRESDB_HOST=${DB_HOST}
+      - DB_POSTGRESDB_PORT=${DB_PORT}
+      - DB_POSTGRESDB_DATABASE=${DB_NAME}
+      - DB_POSTGRESDB_USER=${DB_USER}
+      - DB_POSTGRESDB_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - n8n_storage:/home/node/.n8n
+      - ./n8n/workflows:/backup
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16
+    restart: always
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_NON_ROOT_USER=${DB_NR_USER}
+      - POSTGRES_NON_ROOT_PASSWORD=${DB_NR_PASS}
+    volumes:
+      - db_storage:/var/lib/postgresql/data
+      - ./init-data.sh:/docker-entrypoint-initdb.d/init-data.sh
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -h localhost -U n8n -d n8n']
+      interval: 5s
+      timeout: 5s
+      retries: 10
