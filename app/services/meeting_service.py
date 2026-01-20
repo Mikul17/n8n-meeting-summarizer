@@ -8,18 +8,6 @@ logger = get_logger("meet-bot")
 
 async def create_browser() -> Tuple[Playwright, Browser]:
     playwright = await async_playwright().start()
-    # context = await playwright.chromium.launch_persistent_context(
-    #     locale="en-US",
-    #     user_data_dir="google-profile",
-    #     headless=True,
-    #     args=[
-    #         "--disable-blink-features=AutomationControlled",
-    #         "--use-fake-ui-for-media-stream",
-    #         "--shm-size=1g",
-    #         "--no-sandbox",
-    #     ],
-    # )
-
     context = await playwright.chromium.launch(
         headless=False,
         args=[
@@ -40,7 +28,7 @@ async def connect_meeting(meeting_url: str) -> None:
     pageWrapper = PlaywrightWrapper(page=page, default_timeout=5000)
     await page.goto(f"{meeting_url}?hl=en")
     logger.info(f"Entering {meeting_url}")
-    await pageWrapper.wait(5000)
+    await pageWrapper.wait(500)
     try:
         await pageWrapper.safe_click(text="Continue without microphone and camera")
         await pageWrapper.safe_click(text="Got it")

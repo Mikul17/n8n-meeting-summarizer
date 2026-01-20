@@ -3,26 +3,23 @@ volumes:
   n8n_storage:
 
 services:
-  app:
-    build: .
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./app:/app/app
-      - ./data:/app/data
-      - ./logs:/app/logs
-    environment:
-      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - JIRA_API_TOKEN=${JIRA_API_TOKEN}
-      - JIRA_SERVICE_URL=${JIRA_SERVICE_URL}
-      - JIRA_PROJECT_KEY=${JIRA_PROJECT_KEY}
 
-  browser:
-    ports:
-      - "5910:5910"
-      - "9222:9222"
-
+# Zakomentowane bo nie runnujemy juz aplikacji na dockerze
+#  app:
+#    build: .
+#    ports:
+#      - "8000:8000"
+#    volumes:
+#      - ./app:/app/app
+#      - ./data:/app/data
+#      - ./logs:/app/logs
+#    environment:
+#      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
+#      - OPENAI_API_KEY=${OPENAI_API_KEY}
+#      - JIRA_API_TOKEN=${JIRA_API_TOKEN}
+#      - JIRA_SERVICE_URL=${JIRA_SERVICE_URL}
+#      - JIRA_PROJECT_KEY=${JIRA_PROJECT_KEY}
+#
   n8n:
     image: n8nio/n8n:latest
     restart: always
@@ -52,7 +49,7 @@ services:
     environment:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_DB=${DB_HOST}
       - POSTGRES_NON_ROOT_USER=${DB_NR_USER}
       - POSTGRES_NON_ROOT_PASSWORD=${DB_NR_PASS}
     volumes:
