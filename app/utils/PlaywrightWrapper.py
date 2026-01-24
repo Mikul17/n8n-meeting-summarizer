@@ -52,25 +52,35 @@ class PlaywrightWrapper(BaseModel):
             selector: Optional[str] = None,
             role: Optional[str] = None,
             placeholder: Optional[str] = None,
+            label: Optional[str] = None,
             exact: bool = False,
-            timeout: Optional[int] = None
+            timeout: Optional[int] = None,
+            state: Literal["attached", "detached", "visible", "hidden"] = "visible",
+            force: bool = False,
     ) -> bool:
         timeout = timeout or self.default_timeout
-        locator = await self._get_locator(text, selector, role, placeholder, exact)
+        locator = await self._get_locator(
+            text=text,
+            selector=selector,
+            role=role,
+            placeholder=placeholder,
+            label=label,
+            exact=exact,
+        )
 
         if not locator:
             return False
 
         try:
-            await locator.wait_for(timeout=timeout)
-            await locator.click()
+            await locator.wait_for(state=state, timeout=timeout)
+            await locator.click(force=force, timeout=timeout)
 
-            identifier = text or selector or role or placeholder
+            identifier = text or selector or role or placeholder or label
             logger.info(f"[AGENT]: Clicked element: {identifier}")
             return True
 
         except Exception as e:
-            identifier = text or selector or role or placeholder
+            identifier = text or selector or role or placeholder or label
             logger.warning(f"[ERROR]: Element [{identifier}] not found or not clickable: {e}")
             return False
 
@@ -218,3 +228,7 @@ class PlaywrightWrapper(BaseModel):
             identifier = text or selector or role
             logger.warning(f"[ERROR]: Failed to get text from [{identifier}]: {e}")
             return None
+
+    @property
+    def page(self):
+        return self._page

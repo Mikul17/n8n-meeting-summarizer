@@ -1,26 +1,31 @@
-import asyncio
-from fastapi import FastAPI
+import uuid
+from typing import Dict
+
+from fastapi import FastAPI, BackgroundTasks
 
 from app.models.MeetingRequest import MeetingRequest
-from app.services import connect_meeting
-from app.services import start_recording, stop_recording
+from app.models.MeetingStatusResponse import MeetingStatusResponse, MeetingStatus
 from app.utils import get_logger
+from app.workers.meeting_worker import join_and_record_meeting
 
 app = FastAPI(title="n8n Teams Meeting")
 logger = get_logger()
 
+active_sessions: Dict[str, MeetingStatus] = {}
 
-@app.post("/join-meeting")
-async def join_meeting(request: MeetingRequest):
-    await connect_meeting(request.meeting_url)
 
-#Test endpoint which records 5 seconds of meeting
-@app.post("/begin-recording")
-async def begin_recording():
-    logger.info("Starting 5-second recording")
-    start_recording(channels=2)
-    await asyncio.sleep(25)
-    path = stop_recording()
-    logger.info("Recording finished: %s", path)
-    return {"status": "ok", "duration_seconds": 5, "file": path}
+@app.post("/join-meeting", response_model=MeetingStatusResponse)
+async def join_meeting_endpoint(request: MeetingRequest, background_tasks: BackgroundTasks):
+    meeting_id = str(uuid.uuid4())
 
+    background_tasks.add_task(
+        join_and_record_meeting,
+        meeting_id,
+        request.meeting_url,
+        active_sessions,
+    )
+
+    return MeetingStatusResponse(
+        status=active_sessions.get(meeting_id),
+        meeting_id=meeting_id
+    )
