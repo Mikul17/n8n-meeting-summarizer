@@ -4,7 +4,6 @@ volumes:
 
 services:
 
-# Zakomentowane bo nie runnujemy juz aplikacji na dockerze
 #  app:
 #    build: .
 #    ports:
@@ -19,7 +18,7 @@ services:
 #      - JIRA_API_TOKEN=${JIRA_API_TOKEN}
 #      - JIRA_SERVICE_URL=${JIRA_SERVICE_URL}
 #      - JIRA_PROJECT_KEY=${JIRA_PROJECT_KEY}
-#
+
   n8n:
     image: n8nio/n8n:latest
     restart: always

@@ -12,7 +12,7 @@ def setup_logger(name: str = "n8n_meeting_bot", log_file: str = None) -> logging
         logger.handlers.clear()
 
     formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        '%(asctime)s - [%(name)s] - %(levelname)s - %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     )
 

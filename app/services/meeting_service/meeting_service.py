@@ -1,5 +1,5 @@
 from typing import Tuple
-from playwright.async_api import async_playwright, Playwright, BrowserContext, Page, Browser, Locator
+from playwright.async_api import async_playwright, Playwright, Page, Browser
 
 from app.utils import get_logger, PlaywrightWrapper
 
@@ -13,8 +13,11 @@ async def create_browser() -> Tuple[Playwright, Browser]:
         args=[
             "--disable-blink-features=AutomationControlled",
             "--use-fake-ui-for-media-stream",
+            "--expose-all-device-ids",
             "--shm-size=1g",
             "--no-sandbox",
+            "--autoplay-policy=no-user-gesture-required",
+            f"--audio-output-channels=2"
         ],
     )
     return playwright, context
