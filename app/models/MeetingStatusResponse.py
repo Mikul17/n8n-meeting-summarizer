@@ -9,8 +9,14 @@ class MeetingStatus(str, Enum):
     RECORDING = "recording"
     FINISHED = "finished"
     CRASHED = "crashed"
+    TRANSCRIBED = "transcribed"
 
 
 class MeetingStatusResponse(BaseModel):
     status: MeetingStatus
     meeting_id: str
+
+
+class MeetingState(BaseModel):
+    status: MeetingStatus
+    resume_url: str

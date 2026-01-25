@@ -7,7 +7,8 @@ from typing import Optional, Tuple
 import numpy as np
 import sounddevice as sd
 import soundfile as sf
-from app.services.transcription_service.recording import RecordingHandle
+
+from app.services.recording_service.recording import RecordingHandle
 from app.utils import get_logger
 
 _current_recording: Optional[RecordingHandle] = None
