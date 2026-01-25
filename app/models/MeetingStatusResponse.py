@@ -10,6 +10,7 @@ class MeetingStatus(str, Enum):
     FINISHED = "finished"
     CRASHED = "crashed"
     TRANSCRIBED = "transcribed"
+    PROCESSING = "processing"
 
 
 class MeetingStatusResponse(BaseModel):

@@ -1,0 +1,338 @@
+{
+  "name": "Meeting_summarizer",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "2cc9a413-9e91-4019-b001-93a6ef44cb8f",
+        "authentication": "jwtAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -240,
+        -64
+      ],
+      "id": "364b893e-5691-4462-b7fb-8d3fe88dadf7",
+      "name": "Webhook",
+      "webhookId": "2cc9a413-9e91-4019-b001-93a6ef44cb8f",
+      "credentials": {
+        "jwtAuth": {
+          "id": "s5LayYPXxv19SXb0",
+          "name": "JWT Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8000/join-meeting",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "meeting_id",
+              "value": "={{ $json.body.meeting_id }}"
+            },
+            {
+              "name": "estimated_duration",
+              "value": "={{ $json.body.meeting_duration }}"
+            },
+            {
+              "name": "resume_url",
+              "value": "={{ $execution.resumeUrl }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -16,
+        -64
+      ],
+      "id": "8c896d02-b27a-4e6c-8512-7d7527c49f2e",
+      "name": "Join meeting"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "83b5ca9a-f36c-4f0d-bc0b-8d36b746a5cc",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "started",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        176,
+        -64
+      ],
+      "id": "b185dca7-ca77-485a-8089-a0c56de77ff1",
+      "name": "If successfully joined meeting",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        384,
+        112
+      ],
+      "id": "39024a2c-aeed-4c86-8832-88ba2929c789",
+      "name": "Send a google meet msg"
+    },
+    {
+      "parameters": {
+        "content": "Idealy we would send a message to meeting chat that we are unable to join meeting but it requires google cloud setup in order to access google meet API\n"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        320,
+        240
+      ],
+      "typeVersion": 1,
+      "id": "fdd3ba7d-cde5-496e-a065-25347bf262ea",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "httpMethod": "POST",
+        "limitWaitTime": true,
+        "resumeAmount": "={{ $('Webhook').item.json.body.meeting_duration }}",
+        "resumeUnit": "minutes",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        384,
+        -160
+      ],
+      "id": "e225cbaf-0ab4-4090-8126-904780c85f39",
+      "name": "Await meeting end",
+      "webhookId": "068e774e-791e-45dc-9fb9-0210e226c740",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "content": "Waiting for meeting duration that is planned in calendar or if meeting ends faster - for a http post request from backend"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        240,
+        -352
+      ],
+      "typeVersion": 1,
+      "id": "c9a97768-d032-4c93-bd1d-fd718cbcd4e3",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "url": "=http://host.docker.internal:8000/download-file",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "meeting_id",
+              "value": "={{ $('Webhook').item.json.body.meeting_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        640,
+        -512
+      ],
+      "id": "6ac72399-fd0c-4a4b-b0b1-f5db69232a26",
+      "name": "Fetch meeting recording"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-5.2-chat-latest"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are Senior Technical Project Manager.Your task is to analyze refinement meeting transcriptions and convert them into structured JIRA stories and bugs. Consistently map speaker to his name which you can extract from beggining of conversation. Try to estimate how much story points should be assigned. Break down features into granular, technical tasks (e.g., API development, UI implementation, Unit Tests). If the transcript does not contain any clear features or bugs, return an empty array for those fields.. For estimation use Fibbonaci sequence. Output MUST be a single, valid JSON object matching the provided schema. Do not include any conversational filler or markdown explanations."
+            },
+            {
+              "content": "=Analyze the following meeting transcript and extract features, tasks, and bugs:\n\n### TRANSCRIPT ###\n{{ $json.body.segments.map(s => s.speaker + \": \" + s.text).join('\\n') }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_schema",
+              "schema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"summary\": {\n      \"type\": \"string\",\n      \"description\": \"Quick summary of a meeting transcript (max 100 words).\"\n    },\n    \"features\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"feature_name\": { \"type\": \"string\" },\n          \"feature_description\": { \"type\": \"string\" },\n          \"acceptance_criteria\": { \"type\": \"string\", \"description\": \"Numerical list format\" },\n          \"story_points\": { \"type\": \"integer\" },\n          \"assigned_to\": { \"type\": \"string\" },\n          \"tasks\": {\n            \"type\": \"array\",\n            \"items\": {\n              \"type\": \"object\",\n              \"properties\": {\n                \"task_name\": { \"type\": \"string\" },\n                \"task_description\": { \"type\": \"string\" },\n                \"assigned_to\": { \"type\": \"string\" },\n                \"story_points\": { \"type\": \"integer\" }\n              },\n              \"required\": [\"task_name\", \"task_description\", \"assigned_to\", \"story_points\"],\n              \"additionalProperties\": false\n            }\n          }\n        },\n        \"required\": [\"feature_name\", \"feature_description\", \"acceptance_criteria\", \"story_points\", \"assigned_to\", \"tasks\"],\n        \"additionalProperties\": false\n      }\n    },\n    \"bugs\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"bug_name\": { \"type\": \"string\" },\n          \"bug_description\": { \"type\": \"string\" },\n          \"reproduction_steps\": { \"type\": \"string\", \"description\": \"Numerical list of steps\" },\n          \"story_points\": { \"type\": \"integer\" },\n          \"assigned_to\": { \"type\": \"string\" }\n        },\n        \"required\": [\"bug_name\", \"bug_description\", \"reproduction_steps\", \"story_points\", \"assigned_to\"],\n        \"additionalProperties\": false\n      }\n    }\n  },\n  \"required\": [\"summary\", \"features\", \"bugs\"],\n  \"additionalProperties\": false\n}"
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        704,
+        -160
+      ],
+      "id": "fb2de097-ebfa-41f3-a4a2-f7ea66e36e1c",
+      "name": "Summarize meeting",
+      "credentials": {
+        "openAiApi": {
+          "id": "QnLDrvCGV62KS5Nt",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "Idealy would be to fetch meetings calendar from google API and access meetings on scheduled time. However since it requires google cloud setup (which is behind paywall) for MVP purposes we use request"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -368,
+        -256
+      ],
+      "typeVersion": 1,
+      "id": "7da0e253-c1d9-43f0-9a91-9cd45fb757ea",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8000/create-tasks",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.output[0].content[0].text }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1072,
+        -160
+      ],
+      "id": "5ac14045-ed44-4759-a479-612fda12739c",
+      "name": "Create JIRA tasks"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Join meeting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Join meeting": {
+      "main": [
+        [
+          {
+            "node": "If successfully joined meeting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If successfully joined meeting": {
+      "main": [
+        [
+          {
+            "node": "Await meeting end",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a google meet msg",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a google meet msg": {
+      "main": [
+        []
+      ]
+    },
+    "Await meeting end": {
+      "main": [
+        [
+          {
+            "node": "Summarize meeting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch meeting recording": {
+      "main": [
+        []
+      ]
+    },
+    "Summarize meeting": {
+      "main": [
+        [
+          {
+            "node": "Create JIRA tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "timezone": "Europe/Warsaw",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "26699890-cb67-4b93-8d29-f113f29b8c24",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1fa106741b16d4c7f1a4a9af982b371c7226af214e620254c3285585d845a6a5"
+  },
+  "id": "sEOoKbjfSD_-xg2ICzLH7",
+  "tags": []
+}

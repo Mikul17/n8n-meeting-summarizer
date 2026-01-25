@@ -18,7 +18,7 @@ async def create_browser() -> Tuple[Playwright, Browser]:
             "--shm-size=1g",
             "--no-sandbox",
             "--autoplay-policy=no-user-gesture-required",
-            f"--audio-output-channels=2"
+            f"--audio-output-channels=2",
         ],
     )
     return playwright, context
@@ -60,31 +60,44 @@ async def select_recording_device(page: PlaywrightWrapper, device_name: str):
             raise ValueError("device_name is empty")
 
         await page.safe_click(selector='[aria-label*="Speaker:"]', force=True)
-        await page.safe_wait_for(selector='[role="menu"]:visible, [role="listbox"]:visible', state='visible',
-                                 timeout=5000)
+        await page.safe_wait_for(
+            selector='[role="menu"]:visible, [role="listbox"]:visible',
+            state="visible",
+            timeout=5000,
+        )
 
         pattern = re.escape(safe_name)
         li_selector_prefix = (
             f'[role="menu"]:visible, [role="listbox"]:visible '
             f'>> span:text-matches("^{pattern}", "i") '
-            f'>> xpath=ancestor::li[1]'
+            f">> xpath=ancestor::li[1]"
         )
         li_selector_contains = (
             f'[role="menu"]:visible, [role="listbox"]:visible '
             f'>> span:has-text("{safe_name}") '
-            f'>> xpath=ancestor::li[1]'
+            f">> xpath=ancestor::li[1]"
         )
 
-        clicked = await page.safe_click(selector=li_selector_prefix, state='attached', force=True, timeout=5000)
+        clicked = await page.safe_click(
+            selector=li_selector_prefix, state="attached", force=True, timeout=5000
+        )
         if not clicked:
-            clicked = await page.safe_click(selector=li_selector_contains, state='attached', force=True, timeout=5000)
+            clicked = await page.safe_click(
+                selector=li_selector_contains,
+                state="attached",
+                force=True,
+                timeout=5000,
+            )
 
         if not clicked:
             raise RuntimeError(f"Device option not found: {device_name}")
 
         # Prefer waiting for the popup to close.
-        await page.safe_wait_for(selector='[role="menu"]:visible, [role="listbox"]:visible', state='hidden',
-                                 timeout=3000)
+        await page.safe_wait_for(
+            selector='[role="menu"]:visible, [role="listbox"]:visible',
+            state="hidden",
+            timeout=3000,
+        )
 
         return page
 
@@ -94,22 +107,21 @@ async def select_recording_device(page: PlaywrightWrapper, device_name: str):
         raise
 
 
-async def wait_for_approve(page: PlaywrightWrapper, *, timeout_s: int = 120, poll_ms:int = 1000) -> bool:
+async def wait_for_approve(
+    page: PlaywrightWrapper, *, timeout_s: int = 120, poll_ms: int = 1000
+) -> bool:
     elapsed = 0
     deadline = timeout_s * 1000
     text = "Please wait until a meeting host brings you into the call"
 
     while elapsed < deadline:
         try:
-            still_waiting = False
             try:
-                if await page.page.get_by_text(text).first.is_visible():
-                    still_waiting = True
-                    break
+                is_visible = await page.page.get_by_text(text).first.is_visible()
             except Exception:
-                pass
+                is_visible = False
 
-            if not still_waiting:
+            if not is_visible:
                 return True
 
         except Exception:
@@ -117,10 +129,13 @@ async def wait_for_approve(page: PlaywrightWrapper, *, timeout_s: int = 120, pol
 
         await page.wait(poll_ms)
         elapsed += poll_ms
+
     return False
 
 
-async def wait_for_meeting_end(page: PlaywrightWrapper, *, timeout_s: int, poll_ms: int = 1000) -> bool:
+async def wait_for_meeting_end(
+    page: PlaywrightWrapper, *, timeout_s: int, poll_ms: int = 1000
+) -> bool:
     end_selectors = [
         'text="You left the meeting"',
         'text="You left the call"',
