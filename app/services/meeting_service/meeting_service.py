@@ -60,7 +60,8 @@ async def select_recording_device(page: PlaywrightWrapper, device_name: str):
             raise ValueError("device_name is empty")
 
         await page.safe_click(selector='[aria-label*="Speaker:"]', force=True)
-        await page.safe_wait_for(selector='[role="menu"]:visible, [role="listbox"]:visible', state='visible', timeout=5000)
+        await page.safe_wait_for(selector='[role="menu"]:visible, [role="listbox"]:visible', state='visible',
+                                 timeout=5000)
 
         pattern = re.escape(safe_name)
         li_selector_prefix = (
@@ -82,7 +83,8 @@ async def select_recording_device(page: PlaywrightWrapper, device_name: str):
             raise RuntimeError(f"Device option not found: {device_name}")
 
         # Prefer waiting for the popup to close.
-        await page.safe_wait_for(selector='[role="menu"]:visible, [role="listbox"]:visible', state='hidden', timeout=3000)
+        await page.safe_wait_for(selector='[role="menu"]:visible, [role="listbox"]:visible', state='hidden',
+                                 timeout=3000)
 
         return page
 
@@ -90,3 +92,77 @@ async def select_recording_device(page: PlaywrightWrapper, device_name: str):
         await page.page.screenshot(path="app/logs/error.png")
         logger.error("Error while selecting recording device")
         raise
+
+
+async def wait_for_approve(page: PlaywrightWrapper, *, timeout_s: int = 120, poll_ms:int = 1000) -> bool:
+    elapsed = 0
+    deadline = timeout_s * 1000
+    text = "Please wait until a meeting host brings you into the call"
+
+    while elapsed < deadline:
+        try:
+            still_waiting = False
+            try:
+                if await page.page.get_by_text(text).first.is_visible():
+                    still_waiting = True
+                    break
+            except Exception:
+                pass
+
+            if not still_waiting:
+                return True
+
+        except Exception:
+            pass
+
+        await page.wait(poll_ms)
+        elapsed += poll_ms
+    return False
+
+
+async def wait_for_meeting_end(page: PlaywrightWrapper, *, timeout_s: int, poll_ms: int = 1000) -> bool:
+    end_selectors = [
+        'text="You left the meeting"',
+        'text="You left the call"',
+        'text="Rejoin"',
+        'text="Call ended"',
+        'text="Meeting ended"',
+        'text="You have been removed"',
+        'text="Return to home screen"',
+        'text="Back to home"',
+    ]
+
+    in_call_selectors = [
+        '[aria-label*="Leave call"]',
+        '[aria-label*="Hang up"]',
+        '[aria-label*="End call"]',
+    ]
+
+    deadline = timeout_s * 1000
+    elapsed = 0
+
+    while elapsed < deadline:
+        for sel in end_selectors:
+            try:
+                if await page.page.locator(sel).first.is_visible():
+                    return True
+            except Exception:
+                pass
+
+        any_in_call_visible = False
+        for sel in in_call_selectors:
+            try:
+                if await page.page.locator(sel).first.is_visible():
+                    any_in_call_visible = True
+                    break
+            except Exception:
+                pass
+
+        if not any_in_call_visible:
+            if elapsed >= 2 * poll_ms:
+                return True
+
+        await page.wait(poll_ms)
+        elapsed += poll_ms
+
+    return False

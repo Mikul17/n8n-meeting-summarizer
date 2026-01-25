@@ -188,7 +188,6 @@ def stop_recording(timeout_s: float = 5.0) -> Optional[str]:
     _current_recording.stop_event.set()
     _current_recording.thread.join(timeout=timeout_s)
 
-    # If the thread is still alive, do NOT clear the handle; log and let the caller decide.
     if _current_recording.thread.is_alive():
         logger.error(
             "Recording thread did not stop within %.2fs; recording is still running (output=%s)",
