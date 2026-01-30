@@ -10,12 +10,13 @@ from app.services import (
     wait_for_approve,
     wait_for_meeting_end,
 )
+from app.services.meeting_service.meeting_service import mute_microphone
 from app.services.recording_service.recording_service import (
     stop_recording,
     start_recording,
+    pick_loopback_device,
 )
 from app.services.transcription_service.transcription_service import (
-    send_audio_for_transcription,
     generate_transcription,
 )
 from app.utils import get_logger
@@ -51,8 +52,9 @@ async def join_and_record_meeting(
     try:
         page, browser = await connect_meeting(meeting_url)
         active_sessions[meeting_id].status = MeetingStatus.CONNECTED
-
-        await select_recording_device(page, "BlackHole 16ch")
+        _, device, _ = pick_loopback_device()
+        await select_recording_device(page, device)
+        await mute_microphone(page)
         await ask_to_join(page)
         approved = await wait_for_approve(page, timeout_s=120)
         if not approved:

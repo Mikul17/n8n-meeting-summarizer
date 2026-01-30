@@ -11,6 +11,7 @@ class MeetingStatus(str, Enum):
     CRASHED = "crashed"
     TRANSCRIBED = "transcribed"
     PROCESSING = "processing"
+    PROCESSED = "processed"
 
 
 class MeetingStatusResponse(BaseModel):

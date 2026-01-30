@@ -92,7 +92,6 @@ async def select_recording_device(page: PlaywrightWrapper, device_name: str):
         if not clicked:
             raise RuntimeError(f"Device option not found: {device_name}")
 
-        # Prefer waiting for the popup to close.
         await page.safe_wait_for(
             selector='[role="menu"]:visible, [role="listbox"]:visible',
             state="hidden",
@@ -104,6 +103,15 @@ async def select_recording_device(page: PlaywrightWrapper, device_name: str):
     except Exception:
         await page.page.screenshot(path="app/logs/error.png")
         logger.error("Error while selecting recording device")
+        raise
+
+
+async def mute_microphone(page:PlaywrightWrapper):
+    try:
+        await page.safe_click(selector='[aria-label*="Turn off microphone"]')
+    except Exception:
+        await page.page.screenshot(path="app/logs/error.png")
+        logger.error("Error while muting microphone")
         raise
 
 

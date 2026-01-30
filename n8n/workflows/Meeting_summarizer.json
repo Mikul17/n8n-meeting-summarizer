@@ -149,29 +149,6 @@
     },
     {
       "parameters": {
-        "url": "=http://host.docker.internal:8000/download-file",
-        "sendQuery": true,
-        "queryParameters": {
-          "parameters": [
-            {
-              "name": "meeting_id",
-              "value": "={{ $('Webhook').item.json.body.meeting_id }}"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
-      "position": [
-        640,
-        -512
-      ],
-      "id": "6ac72399-fd0c-4a4b-b0b1-f5db69232a26",
-      "name": "Fetch meeting recording"
-    },
-    {
-      "parameters": {
         "modelId": {
           "__rl": true,
           "mode": "id",
@@ -181,7 +158,7 @@
           "values": [
             {
               "role": "system",
-              "content": "You are Senior Technical Project Manager.Your task is to analyze refinement meeting transcriptions and convert them into structured JIRA stories and bugs. Consistently map speaker to his name which you can extract from beggining of conversation. Try to estimate how much story points should be assigned. Break down features into granular, technical tasks (e.g., API development, UI implementation, Unit Tests). If the transcript does not contain any clear features or bugs, return an empty array for those fields.. For estimation use Fibbonaci sequence. Output MUST be a single, valid JSON object matching the provided schema. Do not include any conversational filler or markdown explanations."
+              "content": "You are Senior Technical Project Manager.Your task is to analyze refinement meeting transcriptions and convert them into structured JIRA stories and bugs. Consistently map speaker to his name which you can extract from beggining of conversation. Try to estimate how much story points should be assigned. Break down features into granular, technical tasks (e.g., API development, UI implementation, Unit Tests). If the transcript does not contain any clear features or bugs, return an empty array for those fields.. For estimation use Fibbonaci sequence. Output MUST be a single, valid JSON object matching the provided schema. Do not include any conversational filler or markdown explanations. While assigning names use only english letter alfabets, use closest possible replacement, ex: ł -> l"
             },
             {
               "content": "=Analyze the following meeting transcript and extract features, tasks, and bugs:\n\n### TRANSCRIPT ###\n{{ $json.body.segments.map(s => s.speaker + \": \" + s.text).join('\\n') }}"
@@ -230,6 +207,15 @@
       "parameters": {
         "method": "POST",
         "url": "http://host.docker.internal:8000/create-tasks",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "meeting_id",
+              "value": "={{ $('Webhook').item.json.body.meeting_id }}"
+            }
+          ]
+        },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ $json.output[0].content[0].text }}",
@@ -245,7 +231,74 @@
       "name": "Create JIRA tasks"
     }
   ],
-  "pinData": {},
+  "pinData": {
+    "Summarize meeting": [
+      {
+        "json": {
+          "output": [
+            {
+              "id": "msg_0bb9f28f79a6056d00697656f106048195ae8871c2206cd385",
+              "type": "message",
+              "status": "completed",
+              "content": [
+                {
+                  "type": "output_text",
+                  "annotations": [],
+                  "logprobs": [],
+                  "text": {
+                    "summary": "During the refinement meeting, Miłosz described a single task for the sprint: implementing a red button that refreshes the user list. The button should fetch all users from ADO, map them to the internal database user model, and be visible only to administrators.",
+                    "features": [
+                      {
+                        "feature_name": "Admin-only Refresh Users Button",
+                        "feature_description": "Implement a red button that allows an administrator to refresh the list of users by fetching data from ADO and mapping it to the internal user database model.",
+                        "acceptance_criteria": "1. A red refresh button is visible on the users list screen.\n2. The button is visible and usable only by administrator users.\n3. Clicking the button fetches all users from ADO.\n4. Fetched users are correctly mapped to the internal User database model.\n5. The users list is updated after successful refresh.",
+                        "story_points": 5,
+                        "assigned_to": "Miłosz",
+                        "tasks": [
+                          {
+                            "task_name": "UI Implementation of Refresh Button",
+                            "task_description": "Add a red refresh button to the users list view.",
+                            "assigned_to": "Miłosz",
+                            "story_points": 1
+                          },
+                          {
+                            "task_name": "Admin Authorization Check",
+                            "task_description": "Ensure the refresh button is visible and accessible only for administrator users.",
+                            "assigned_to": "Miłosz",
+                            "story_points": 1
+                          },
+                          {
+                            "task_name": "ADO Users Fetch API",
+                            "task_description": "Implement backend logic to fetch all users from ADO.",
+                            "assigned_to": "Miłosz",
+                            "story_points": 2
+                          },
+                          {
+                            "task_name": "User Mapping and Persistence",
+                            "task_description": "Map fetched ADO users to the internal User model and persist them in the database.",
+                            "assigned_to": "Miłosz",
+                            "story_points": 2
+                          },
+                          {
+                            "task_name": "Unit and Integration Tests",
+                            "task_description": "Add tests for user fetching, mapping logic, and admin-only access.",
+                            "assigned_to": "Miłosz",
+                            "story_points": 1
+                          }
+                        ]
+                      }
+                    ],
+                    "bugs": []
+                  }
+                }
+              ],
+              "role": "assistant"
+            }
+          ]
+        }
+      }
+    ]
+  },
   "connections": {
     "Webhook": {
       "main": [
@@ -303,11 +356,6 @@
         ]
       ]
     },
-    "Fetch meeting recording": {
-      "main": [
-        []
-      ]
-    },
     "Summarize meeting": {
       "main": [
         [
@@ -328,7 +376,7 @@
     "timezone": "Europe/Warsaw",
     "callerPolicy": "workflowsFromSameOwner"
   },
-  "versionId": "26699890-cb67-4b93-8d29-f113f29b8c24",
+  "versionId": "9813f698-e6c3-4698-9d71-786beef33be5",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "1fa106741b16d4c7f1a4a9af982b371c7226af214e620254c3285585d845a6a5"

@@ -15,7 +15,7 @@ _current_recording: Optional[RecordingHandle] = None
 logger = get_logger("recording")
 
 
-def _pick_loopback_device() -> Tuple[int, str, bool]:
+def pick_loopback_device() -> Tuple[int, str, bool]:
     system = platform.system().lower()
     devices = sd.query_devices()
 
@@ -100,7 +100,7 @@ def start_recording(
             raise FileExistsError(f"Output file with given name already exists: {output_path}")
 
     if device is None:
-        device, dev_name, use_loopback = _pick_loopback_device()
+        device, dev_name, use_loopback = pick_loopback_device()
     else:
         dev_name = sd.query_devices(device)["name"]
         use_loopback = platform.system().lower() == "windows"
